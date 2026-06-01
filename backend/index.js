@@ -52,6 +52,9 @@ app.use('/uploads', express.static(uploadsDir));
 
 app.set('upload', upload);
 
+const platformRoutes = require('./routes/platforms');
+app.use('/api/platforms', platformRoutes);
+
 // TEST ENDPOINT
 app.get('/api/test', async (req, res) => {
   try {
