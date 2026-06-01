@@ -55,6 +55,9 @@ app.set('upload', upload);
 const platformRoutes = require('./routes/platforms');
 app.use('/api/platforms', platformRoutes);
 
+const gameRoutes = require('./routes/games');
+app.use('/api/games', gameRoutes);
+
 // TEST ENDPOINT
 app.get('/api/test', async (req, res) => {
   try {
