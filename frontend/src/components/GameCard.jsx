@@ -9,7 +9,7 @@ function GameCard({ game, onClick, onEdit, onDelete }) {
   return (
     <div
       onClick={() => onClick(game)}
-      className="relative group overflow-hidden rounded-box border-2 border-base-300 bg-base-200 shadow-md hover:shadow-xl hover:border-accent/50 transition-all duration-300 cursor-pointer flex flex-col aspect-[2/3] w-full"
+      className="relative group overflow-hidden rounded-box border-2 border-base-300 bg-base-200 shadow-md hover:shadow-xl hover:border-accent/50 transition-all duration-300 cursor-pointer flex flex-col aspect-[2/3] w-full max-w-[280px]"
     >
       <div className="flex-1 min-h-0 relative overflow-hidden bg-base-300">
         {coverUrl ? (
