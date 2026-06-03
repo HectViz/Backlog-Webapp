@@ -102,12 +102,16 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Plataforma no encontrada.' });
     }
 
+    const checkGames = await db.query('SELECT id FROM games WHERE platform_id = $1 LIMIT 1', [id]);
+    if (checkGames.rows.length > 0) {
+      return res.status(400).json({ error: 'No se puede eliminar la plataforma porque tiene videojuegos asociados.' });
+    }
+
     await db.query('DELETE FROM platforms WHERE id = $1', [id]);
     res.json({ message: 'Plataforma eliminada correctamente.' });
   } catch (err) {
     console.error(`Error al eliminar plataforma ${id}:`, err);
 
-    // casi cagadon antologico
     if (err.code === '23503') {
       return res.status(400).json({
         error: 'No se puede eliminar la plataforma porque tiene videojuegos asociados.'
