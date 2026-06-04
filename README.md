@@ -2,6 +2,9 @@
 
 Backlog es una aplicación web que sirve como un catálogo personal de videojuegos pendientes, en curso y completados. Permite organizar tu biblioteca de juegos asignándoles prioridades, plataformas y notas o reviews.
 
+### Video Showcase
+https://www.youtube.com/watch?v=IoF5Wz3HOJs
+
 ## Features
 
 *   Dashboard: Resumen con métricas del backlog, barra de progreso por estado y un selector para destacar el juego favorito o activo.
