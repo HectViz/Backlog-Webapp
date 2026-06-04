@@ -4,6 +4,16 @@
 
 @layer base {
 
+    :root,
+    html,
+    body {
+        overflow: hidden;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        scrollbar-gutter: auto !important;
+    }
+
     body,
     button,
     input,
@@ -13,7 +23,7 @@
         font-family: 'Space Grotesk', sans-serif;
     }
 
-    html {
+    main {
         scrollbar-gutter: stable;
     }
 }
