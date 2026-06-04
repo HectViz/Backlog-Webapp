@@ -9,7 +9,10 @@ Backlog es una aplicación web que sirve como un catálogo personal de videojueg
 *   Gestión de Plataformas: Lista completa de plataformas de videojuegos para registrar aquellos sistemas que el usuario posea y vincularlos con juegos.
 *   Soporte para Imagenes: Subida y almacenamiento local de portadas de juegos en la carpeta del servidor.
 
----
+<img src="https://github.com/user-attachments/assets/3619e751-5ab3-4c41-bd0b-24a8ca1428a8" alt="Dashboard de Backlog" />
+<img src="https://github.com/user-attachments/assets/225eda14-d2e0-4622-b3fa-a1440415546a" alt="Catálogo de Videojuegos" />
+<img src="https://github.com/user-attachments/assets/8d800e7e-de08-4d06-8791-da37ec1799a7" alt="Soporte para Imágenes" />
+<img src="https://github.com/user-attachments/assets/7b4aa20c-44c6-4c36-baf2-bbbed0e0ed31" alt="Gestión de Plataformas" />
 
 ## Requerimientos
 
@@ -56,8 +59,6 @@ Backlog es una aplicación web que sirve como un catálogo personal de videojueg
     npm run dev
     ```
     La app estará disponible en `http://localhost:5173` por default.
-
----
 
 ## Dependencias:
 
