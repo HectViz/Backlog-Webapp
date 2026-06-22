@@ -58,6 +58,9 @@ app.use('/api/platforms', platformRoutes);
 const gameRoutes = require('./routes/games');
 app.use('/api/games', gameRoutes);
 
+const genreRoutes = require('./routes/genres');
+app.use('/api/genres', genreRoutes);
+
 // TEST ENDPOINT
 app.get('/api/test', async (req, res) => {
   try {
