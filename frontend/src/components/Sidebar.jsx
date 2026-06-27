@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Gamepad2, Layers } from 'lucide-react';
+import { Home, LayoutDashboard, Gamepad2, Layers, Tag, Shuffle } from 'lucide-react';
 
 function Sidebar({ activeTab, setActiveTab }) {
   return (
@@ -11,13 +11,24 @@ function Sidebar({ activeTab, setActiveTab }) {
           </h1>
         </div>
 
-        <ul className="menu menu-horizontal md:menu-vertical p-0 gap-1 md:gap-3">
+        <ul className="menu menu-horizontal md:menu-vertical p-0 gap-1 md:gap-3 flex-wrap md:flex-nowrap justify-center md:justify-start">
+          <li>
+            <button
+              onClick={() => setActiveTab('landing')}
+              className={`flex items-center gap-2 md:gap-3 font-bold py-2 md:py-3 px-3 md:px-4 ${activeTab === 'landing' ? 'active' : 'hover:bg-base-300'
+                }`}
+              title="Inicio"
+            >
+              <Home size={18} />
+              <span className="hidden sm:inline md:inline-block">Inicio</span>
+            </button>
+          </li>
           <li>
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={`flex items-center gap-2 md:gap-3 font-bold py-2 md:py-3 px-3 md:px-4 ${
-                activeTab === 'dashboard' ? 'active' : 'hover:bg-base-300'
-              }`}
+              className={`flex items-center gap-2 md:gap-3 font-bold py-2 md:py-3 px-3 md:px-4 ${activeTab === 'dashboard' ? 'active' : 'hover:bg-base-300'
+                }`}
+              title="Dashboard"
             >
               <LayoutDashboard size={18} />
               <span className="hidden sm:inline md:inline-block">Dashboard</span>
@@ -26,9 +37,9 @@ function Sidebar({ activeTab, setActiveTab }) {
           <li>
             <button
               onClick={() => setActiveTab('games')}
-              className={`flex items-center gap-3 font-bold py-2 md:py-3 px-3 md:px-4 ${
-                activeTab === 'games' ? 'active' : 'hover:bg-base-300'
-              }`}
+              className={`flex items-center gap-2 md:gap-3 font-bold py-2 md:py-3 px-3 md:px-4 ${activeTab === 'games' ? 'active' : 'hover:bg-base-300'
+                }`}
+              title="Mi Backlog"
             >
               <Gamepad2 size={18} />
               <span className="hidden sm:inline md:inline-block">Mi Backlog</span>
@@ -37,12 +48,34 @@ function Sidebar({ activeTab, setActiveTab }) {
           <li>
             <button
               onClick={() => setActiveTab('platforms')}
-              className={`flex items-center gap-2 md:gap-3 font-bold py-2 md:py-3 px-3 md:px-4 ${
-                activeTab === 'platforms' ? 'active' : 'hover:bg-base-300'
-              }`}
+              className={`flex items-center gap-2 md:gap-3 font-bold py-2 md:py-3 px-3 md:px-4 ${activeTab === 'platforms' ? 'active' : 'hover:bg-base-300'
+                }`}
+              title="Plataformas"
             >
               <Layers size={18} />
               <span className="hidden sm:inline md:inline-block">Plataformas</span>
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={() => setActiveTab('genres')}
+              className={`flex items-center gap-2 md:gap-3 font-bold py-2 md:py-3 px-3 md:px-4 ${activeTab === 'genres' ? 'active' : 'hover:bg-base-300'
+                }`}
+              title="Géneros"
+            >
+              <Tag size={18} />
+              <span className="hidden sm:inline md:inline-block">Géneros</span>
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={() => setActiveTab('randomizer')}
+              className={`flex items-center gap-2 md:gap-3 font-bold py-2 md:py-3 px-3 md:px-4 ${activeTab === 'randomizer' ? 'active' : 'hover:bg-base-300'
+                }`}
+              title="Ruleta"
+            >
+              <Shuffle size={18} />
+              <span className="hidden sm:inline md:inline-block">Ruleta</span>
             </button>
           </li>
         </ul>
@@ -56,3 +89,4 @@ function Sidebar({ activeTab, setActiveTab }) {
 }
 
 export default Sidebar;
+
