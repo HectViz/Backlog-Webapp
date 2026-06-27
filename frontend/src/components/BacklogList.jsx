@@ -10,17 +10,42 @@ function BacklogList() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [platformFilter, setPlatformFilter] = useState('');
+  const [genreFilter, setGenreFilter] = useState('');
   const [sortBy, setSortBy] = useState('priority_desc');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' o 'table'
+
+  const [platforms, setPlatforms] = useState([]);
+  const [genres, setGenres] = useState([]);
 
   const [selectedGame, setSelectedGame] = useState(null);
   const [gameToDelete, setGameToDelete] = useState(null);
   const [gameForModal, setGameForModal] = useState(null);
   const [deleteError, setDeleteError] = useState('');
 
+  // Cargar datos de filtros (Plataformas y Géneros) al montar el componente
+  useEffect(() => {
+    const loadFiltersData = async () => {
+      try {
+        const [platformsRes, genresRes] = await Promise.all([
+          fetch('http://localhost:5000/api/platforms'),
+          fetch('http://localhost:5000/api/genres')
+        ]);
+        if (platformsRes.ok && genresRes.ok) {
+          setPlatforms(await platformsRes.json());
+          setGenres(await genresRes.json());
+        }
+      } catch (err) {
+        console.error('Error al cargar datos para filtros:', err);
+      }
+    };
+    loadFiltersData();
+  }, []);
+
+  // Recargar videojuegos cada vez que cambien los filtros o el ordenamiento
   useEffect(() => {
     fetchGames();
-  }, [searchQuery, statusFilter, sortBy]);
+  }, [searchQuery, statusFilter, platformFilter, genreFilter, sortBy]);
 
   const fetchGames = async () => {
     setLoading(true);
@@ -31,6 +56,12 @@ function BacklogList() {
       }
       if (statusFilter) {
         queryParams.append('status', statusFilter);
+      }
+      if (platformFilter) {
+        queryParams.append('platformId', platformFilter);
+      }
+      if (genreFilter) {
+        queryParams.append('genreId', genreFilter);
       }
       if (sortBy) {
         queryParams.append('sortBy', sortBy);
@@ -112,78 +143,112 @@ function BacklogList() {
         </button>
       </div>
 
-      {/* Menu de botones */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-base-200 border-2 border-base-300 rounded-box p-4 shadow-sm">
-        <div className="relative w-full md:max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50" size={16} />
-          <input
-            type="text"
-            placeholder="Buscar videojuegos"
-            className="input input-bordered input-sm w-full pl-9 bg-base-100"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+      {/* Menu de botones y filtros */}
+      <div className="flex flex-col gap-4 bg-base-200 border-2 border-base-300 rounded-box p-4 shadow-sm">
+        {/* Fila superior: Búsqueda y Filtros de Estado */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="relative w-full md:max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50" size={16} />
+            <input
+              type="text"
+              placeholder="Buscar videojuegos"
+              className="input input-bordered input-sm w-full pl-9 bg-base-100"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 justify-start md:justify-end">
+            <div className="join">
+              <button
+                className={`btn join-item btn-xs sm:btn-sm ${statusFilter === '' ? 'btn-secondary' : 'btn-ghost bg-base-100 border-base-300'}`}
+                onClick={() => setStatusFilter('')}>Todos
+              </button>
+              <button
+                className={`btn join-item btn-xs sm:btn-sm ${statusFilter === 'Jugando' ? 'btn-secondary' : 'btn-ghost bg-base-100 border-base-300'}`}
+                onClick={() => setStatusFilter('Jugando')}>Jugando
+              </button>
+              <button
+                className={`btn join-item btn-xs sm:btn-sm ${statusFilter === 'En cola' ? 'btn-secondary' : 'btn-ghost bg-base-100 border-base-300'}`}
+                onClick={() => setStatusFilter('En cola')}>En Cola
+              </button>
+              <button
+                className={`btn join-item btn-xs sm:btn-sm ${statusFilter === 'Completado' ? 'btn-secondary' : 'btn-ghost bg-base-100 border-base-300'}`}
+                onClick={() => setStatusFilter('Completado')}>Completado
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 justify-start md:justify-end">
-          <div className="join">
-            <button
-              className={`btn join-item btn-xs sm:btn-sm ${statusFilter === '' ? 'btn-secondary' : 'btn-ghost bg-base-100 border-base-300'}`}
-              onClick={() => setStatusFilter('')}>Todos
-            </button>
-            <button
-              className={`btn join-item btn-xs sm:btn-sm ${statusFilter === 'Jugando' ? 'btn-secondary' : 'btn-ghost bg-base-100 border-base-300'}`}
-              onClick={() => setStatusFilter('Jugando')}>Jugando
-            </button>
-            <button
-              className={`btn join-item btn-xs sm:btn-sm ${statusFilter === 'En cola' ? 'btn-secondary' : 'btn-ghost bg-base-100 border-base-300'}`}
-              onClick={() => setStatusFilter('En cola')}>En Cola
-            </button>
-            <button
-              className={`btn join-item btn-xs sm:btn-sm ${statusFilter === 'Completado' ? 'btn-secondary' : 'btn-ghost bg-base-100 border-base-300'}`}
-              onClick={() => setStatusFilter('Completado')}>Completado
-            </button>
+        {/* Fila inferior: Filtros de Plataforma, Género, Ordenamiento y Vista */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 border-t border-base-300/40">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Filtro Plataformas */}
+            <select
+              className="select select-bordered select-xs sm:select-sm font-sans bg-base-100"
+              value={platformFilter}
+              onChange={(e) => setPlatformFilter(e.target.value)}
+            >
+              <option value="">Todas las plataformas</option>
+              {platforms.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+
+            {/* Filtro Géneros */}
+            <select
+              className="select select-bordered select-xs sm:select-sm font-sans bg-base-100"
+              value={genreFilter}
+              onChange={(e) => setGenreFilter(e.target.value)}
+            >
+              <option value="">Todos los géneros</option>
+              {genres.map((g) => (
+                <option key={g.id} value={g.id}>{g.name}</option>
+              ))}
+            </select>
           </div>
 
-          <div className="dropdown dropdown-end">
-            <div tabIndex={0} role="button" className="btn btn-ghost btn-xs sm:btn-sm border-base-300 bg-base-100 font-bold flex items-center gap-1.5 shadow-sm">
-              <span>Ordenar Por: {getSortLabel()}</span>
-              <ChevronDown size={14} />
+          <div className="flex flex-wrap items-center gap-3 justify-end">
+            <div className="dropdown dropdown-end">
+              <div tabIndex={0} role="button" className="btn btn-ghost btn-xs sm:btn-sm border-base-300 bg-base-100 font-bold flex items-center gap-1.5 shadow-sm">
+                <span>Ordenar Por: {getSortLabel()}</span>
+                <ChevronDown size={14} />
+              </div>
+              <ul tabIndex={0} className="dropdown-content menu p-2 shadow-lg bg-base-200 rounded-box w-56 z-30 border-2 border-base-300 mt-1">
+                <li>
+                  <button className={sortBy === 'priority_desc' ? 'active' : ''} onClick={() => setSortBy('priority_desc')}>
+                    Prioridad (5 → 1)
+                  </button>
+                </li>
+                <li>
+                  <button className={sortBy === 'priority_asc' ? 'active' : ''} onClick={() => setSortBy('priority_asc')}>
+                    Prioridad (1 → 5)
+                  </button>
+                </li>
+                <li>
+                  <button className={sortBy === 'title' ? 'active' : ''} onClick={() => setSortBy('title')}>
+                    Nombre
+                  </button>
+                </li>
+              </ul>
             </div>
-            <ul tabIndex={0} className="dropdown-content menu p-2 shadow-lg bg-base-200 rounded-box w-56 z-30 border-2 border-base-300 mt-1">
-              <li>
-                <button className={sortBy === 'priority_desc' ? 'active' : ''} onClick={() => setSortBy('priority_desc')}>
-                  Prioridad (5 → 1)
-                </button>
-              </li>
-              <li>
-                <button className={sortBy === 'priority_asc' ? 'active' : ''} onClick={() => setSortBy('priority_asc')}>
-                  Prioridad (1 → 5)
-                </button>
-              </li>
-              <li>
-                <button className={sortBy === 'title' ? 'active' : ''} onClick={() => setSortBy('title')}>
-                  Nombre
-                </button>
-              </li>
-            </ul>
-          </div>
 
-          <div className="join border-2 border-base-300 shadow-sm overflow-hidden">
-            <button
-              className={`btn join-item btn-xs sm:btn-sm ${viewMode === 'grid' ? 'btn-secondary' : 'btn-ghost bg-base-100'}`}
-              onClick={() => setViewMode('grid')}
-              title="Vista de cuadrícula"
-            >
-              <LayoutGrid size={15} />
-            </button>
-            <button
-              className={`btn join-item btn-xs sm:btn-sm ${viewMode === 'table' ? 'btn-secondary' : 'btn-ghost bg-base-100'}`}
-              onClick={() => setViewMode('table')}
-              title="Vista de tabla"
-            >
-              <List size={15} />
-            </button>
+            <div className="join border-2 border-base-300 shadow-sm overflow-hidden">
+              <button
+                className={`btn join-item btn-xs sm:btn-sm ${viewMode === 'grid' ? 'btn-secondary' : 'btn-ghost bg-base-100'}`}
+                onClick={() => setViewMode('grid')}
+                title="Vista de cuadrícula"
+              >
+                <LayoutGrid size={15} />
+              </button>
+              <button
+                className={`btn join-item btn-xs sm:btn-sm ${viewMode === 'table' ? 'btn-secondary' : 'btn-ghost bg-base-100'}`}
+                onClick={() => setViewMode('table')}
+                title="Vista de tabla"
+              >
+                <List size={15} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -195,7 +260,7 @@ function BacklogList() {
         </div>
       )}
 
-      {/* Videogame grid / table */}
+      {/* Grid o Tabla de Videojuegos */}
       {loading ? (
         <div className="flex justify-center items-center p-24">
           <span className="loading loading-spinner loading-lg text-primary" />
@@ -225,6 +290,7 @@ function BacklogList() {
                 <th className="w-20">Portada</th>
                 <th>Título</th>
                 <th>Plataforma</th>
+                <th>Género</th>
                 <th className="text-center">Prioridad</th>
                 <th>Estado</th>
                 <th className="text-center">Acciones</th>
@@ -252,6 +318,7 @@ function BacklogList() {
                   </td>
                   <td className="font-bold text-base">{game.title}</td>
                   <td className="opacity-80">{game.platform_name || '—'}</td>
+                  <td className="opacity-80">{game.genre_name || '—'}</td>
                   <td className="text-center">
                     <div className="flex items-center justify-center gap-1 font-bold">
                       <span>{game.priority}</span>

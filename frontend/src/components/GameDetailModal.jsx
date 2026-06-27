@@ -42,12 +42,20 @@ function GameDetailModal({ id, game }) {
           </div>
 
           <div className="space-y-4">
-            <div className="flex items-center gap-2 border-b-2 border-base-300 pb-3">
-              <span className="text-xs opacity-60 font-bold uppercase">Plataforma:</span>
-              <span className="font-semibold text-sm flex items-center gap-1">
-                <Layers size={14} className="text-primary" />
-                {game.platform_name || 'Sin Especificar'}
-              </span>
+            <div className="flex flex-col gap-2.5 border-b-2 border-base-300 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs opacity-60 font-bold uppercase w-24">Plataforma:</span>
+                <span className="font-semibold text-sm flex items-center gap-1">
+                  <Layers size={14} className="text-primary" />
+                  {game.platform_name || 'Sin Especificar'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs opacity-60 font-bold uppercase w-24">Género:</span>
+                <span className="font-semibold text-sm text-base-content">
+                  {game.genre_name || 'Sin Especificar'}
+                </span>
+              </div>
             </div>
 
             <div>

@@ -3,23 +3,27 @@ import React, { useState, useEffect } from 'react';
 function GameModal({ id, game, onSave }) {
   const [title, setTitle] = useState('');
   const [platformId, setPlatformId] = useState('');
+  const [genreId, setGenreId] = useState('');
   const [status, setStatus] = useState('En cola');
   const [priority, setPriority] = useState(3);
   const [cover, setCover] = useState(null);
   const [review, setReview] = useState('');
   const [removeCover, setRemoveCover] = useState(false);
   const [platforms, setPlatforms] = useState([]);
+  const [genres, setGenres] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     fetchPlatforms();
+    fetchGenres();
   }, []);
 
   useEffect(() => {
     if (game) {
       setTitle(game.title || '');
       setPlatformId(game.platform_id || '');
+      setGenreId(game.genre_id || '');
       setStatus(game.status || 'En cola');
       setPriority(game.priority || 3);
       setReview(game.review || '');
@@ -28,6 +32,7 @@ function GameModal({ id, game, onSave }) {
     } else {
       setTitle('');
       setPlatformId('');
+      setGenreId('');
       setStatus('En cola');
       setPriority(3);
       setReview('');
@@ -44,6 +49,16 @@ function GameModal({ id, game, onSave }) {
       setPlatforms(data);
     } catch (err) {
       console.error('Error al cargar plataformas:', err);
+    }
+  };
+
+  const fetchGenres = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/genres');
+      const data = await response.json();
+      setGenres(data);
+    } catch (err) {
+      console.error('Error al cargar géneros:', err);
     }
   };
 
@@ -69,11 +84,10 @@ function GameModal({ id, game, onSave }) {
         ? `http://localhost:5000/api/games/${game.id}`
         : 'http://localhost:5000/api/games';
 
-      const method = 'PUT';
-
       const formData = new FormData();
       formData.append('title', title.trim());
       formData.append('platform_id', platformId);
+      formData.append('genre_id', genreId);
       formData.append('status', status);
       formData.append('priority', priority.toString());
       formData.append('review', review.trim());
@@ -149,6 +163,26 @@ function GameModal({ id, game, onSave }) {
 
             <div className="form-control">
               <label className="label">
+                <span className="label-text font-semibold">Género</span>
+              </label>
+              <select
+                className="select select-bordered w-full"
+                value={genreId}
+                onChange={(e) => setGenreId(e.target.value)}
+              >
+                <option value="">Selecciona género</option>
+                {genres.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="form-control">
+              <label className="label">
                 <span className="label-text font-semibold">Estado *</span>
               </label>
               <select
@@ -161,9 +195,7 @@ function GameModal({ id, game, onSave }) {
                 <option value="Completado">Completado</option>
               </select>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-semibold">Prioridad o Rating *</span>
@@ -180,35 +212,35 @@ function GameModal({ id, game, onSave }) {
                 <option value={5}>5 - Muy Alta</option>
               </select>
             </div>
+          </div>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-semibold">Portada (Imagen)</span>
-              </label>
-              <input
-                type="file"
-                className="file-input file-input-bordered file-input-sm w-full"
-                accept="image/*"
-                onChange={handleFileChange}
-              />
-              {game && game.cover_path && !removeCover && (
-                <div className="flex items-center justify-between mt-2 bg-base-300 p-2 rounded-lg text-xs">
-                  <span className="opacity-75 truncate max-w-[150px]">Imagen existente</span>
-                  <button
-                    type="button"
-                    className="btn btn-error btn-xs btn-outline"
-                    onClick={() => setRemoveCover(true)}
-                  >
-                    Eliminar
-                  </button>
-                </div>
-              )}
-              {removeCover && (
-                <div className="text-xs text-error mt-2 font-semibold">
-                  Se eliminará la portada existente al guardar
-                </div>
-              )}
-            </div>
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text font-semibold">Portada (Imagen)</span>
+            </label>
+            <input
+              type="file"
+              className="file-input file-input-bordered file-input-sm w-full"
+              accept="image/*"
+              onChange={handleFileChange}
+            />
+            {game && game.cover_path && !removeCover && (
+              <div className="flex items-center justify-between mt-2 bg-base-300 p-2 rounded-lg text-xs">
+                <span className="opacity-75 truncate max-w-[150px]">Imagen existente</span>
+                <button
+                  type="button"
+                  className="btn btn-error btn-xs btn-outline"
+                  onClick={() => setRemoveCover(true)}
+                >
+                  Eliminar
+                </button>
+              </div>
+            )}
+            {removeCover && (
+              <div className="text-xs text-error mt-2 font-semibold">
+                Se eliminará la portada existente al guardar
+              </div>
+            )}
           </div>
 
           <div className="form-control">
@@ -231,13 +263,15 @@ function GameModal({ id, game, onSave }) {
           )}
 
           <div className="modal-action mt-2">
-            <form method="dialog">
-              <button type="button" className="btn btn-ghost mr-2" onClick={() => document.getElementById(id).close()}>
-                Cancelar
-              </button>
-            </form>
+            <button
+              type="button"
+              className="btn btn-ghost mr-2"
+              onClick={() => document.getElementById(id).close()}
+            >
+              Cancelar
+            </button>
             <button type="submit" className="btn btn-secondary" disabled={loading}>
-              {loading ? <span className="loading loading-spinner loading-sm" /> : null}
+              {loading && <span className="loading loading-spinner loading-sm" />}
               {game ? 'Guardar Cambios' : 'Crear Videojuego'}
             </button>
           </div>
