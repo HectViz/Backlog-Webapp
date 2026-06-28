@@ -31,11 +31,16 @@ function LandingPage({ onEnter }) {
             completedGames: gamesData.filter(g => g.status === 'Completado').length,
           });
 
-          const gameWithCover = gamesData.find(g => g.cover_path);
-          if (gameWithCover) {
-            setFeaturedCover({
-              title: gameWithCover.title,
-              url: `http://localhost:5000${gameWithCover.cover_path}`
+            const gamesWithCover = gamesData.filter(g => g.cover_path);
+            
+            if (gamesWithCover.length > 0) {
+              // 2. Elegimos un índice al azar entre los juegos válidos
+              const randomIndex = Math.floor(Math.random() * gamesWithCover.length);
+              const randomGame = gamesWithCover[randomIndex];
+            
+              setFeaturedCover({
+                title: randomGame.title,
+                url: `http://localhost:5000${randomGame.cover_path}`
             });
           }
         }
