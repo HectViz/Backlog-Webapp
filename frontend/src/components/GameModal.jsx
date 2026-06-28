@@ -1,119 +1,95 @@
 import React, { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { addGame, updateGame } from '../store/gamesSlice';
+import { fetchPlatforms } from '../store/platformsSlice';
+import { fetchGenres } from '../store/genresSlice';
+import useFetch from '../hooks/useFetch';
+import useForm from '../hooks/useForm';
 
 function GameModal({ id, game, onSave }) {
-  const [title, setTitle] = useState('');
-  const [platformId, setPlatformId] = useState('');
-  const [genreId, setGenreId] = useState('');
-  const [status, setStatus] = useState('En cola');
-  const [priority, setPriority] = useState(3);
-  const [cover, setCover] = useState(null);
-  const [review, setReview] = useState('');
-  const [removeCover, setRemoveCover] = useState(false);
-  const [platforms, setPlatforms] = useState([]);
-  const [genres, setGenres] = useState([]);
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [removeCover, setRemoveCover] = useState(false);
 
-  useEffect(() => {
-    fetchPlatforms();
-    fetchGenres();
-  }, []);
+  const { data: platforms } = useFetch(fetchPlatforms, (state) => state.platforms);
+  const { data: genres } = useFetch(fetchGenres, (state) => state.genres);
+
+  const { values, handleChange, resetForm, setFieldValue } = useForm({
+    title: '',
+    platformId: '',
+    genreId: '',
+    status: 'En cola',
+    priority: 3,
+    cover: null,
+    review: '',
+  });
 
   useEffect(() => {
     if (game) {
-      setTitle(game.title || '');
-      setPlatformId(game.platform_id || '');
-      setGenreId(game.genre_id || '');
-      setStatus(game.status || 'En cola');
-      setPriority(game.priority || 3);
-      setReview(game.review || '');
-      setCover(null);
-      setRemoveCover(false);
+      resetForm({
+        title: game.title || '',
+        platformId: game.platform_id || '',
+        genreId: game.genre_id || '',
+        status: game.status || 'En cola',
+        priority: game.priority || 3,
+        cover: null,
+        review: game.review || '',
+      });
     } else {
-      setTitle('');
-      setPlatformId('');
-      setGenreId('');
-      setStatus('En cola');
-      setPriority(3);
-      setReview('');
-      setCover(null);
-      setRemoveCover(false);
+      resetForm({
+        title: '',
+        platformId: '',
+        genreId: '',
+        status: 'En cola',
+        priority: 3,
+        cover: null,
+        review: '',
+      });
     }
+    setRemoveCover(false);
     setError('');
-  }, [game]);
-
-  const fetchPlatforms = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/api/platforms');
-      const data = await response.json();
-      setPlatforms(data);
-    } catch (err) {
-      console.error('Error al cargar plataformas:', err);
-    }
-  };
-
-  const fetchGenres = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/api/genres');
-      const data = await response.json();
-      setGenres(data);
-    } catch (err) {
-      console.error('Error al cargar géneros:', err);
-    }
-  };
-
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setCover(e.target.files[0]);
-      setRemoveCover(false);
-    }
-  };
+  }, [game, resetForm]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (!title.trim()) {
+    if (!values.title.trim()) {
       setError('El título del videojuego es obligatorio');
       return;
     }
 
     setLoading(true);
     try {
-      const url = game
-        ? `http://localhost:5000/api/games/${game.id}`
-        : 'http://localhost:5000/api/games';
-
       const formData = new FormData();
-      formData.append('title', title.trim());
-      formData.append('platform_id', platformId);
-      formData.append('genre_id', genreId);
-      formData.append('status', status);
-      formData.append('priority', priority.toString());
-      formData.append('review', review.trim());
+      formData.append('title', values.title.trim());
+      formData.append('platform_id', values.platformId);
+      formData.append('genre_id', values.genreId);
+      formData.append('status', values.status);
+      formData.append('priority', values.priority.toString());
+      formData.append('review', values.review.trim());
 
-      if (cover) {
-        formData.append('cover', cover);
+      if (values.cover) {
+        formData.append('cover', values.cover);
       }
       if (game) {
         formData.append('remove_cover', removeCover ? 'true' : 'false');
       }
 
-      const response = await fetch(url, {
-        method: game ? 'PUT' : 'POST',
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Ocurrió un error al guardar');
-        setLoading(false);
-        return;
+      let resultAction;
+      if (game) {
+        resultAction = await dispatch(updateGame({ id: game.id, formData }));
+      } else {
+        resultAction = await dispatch(addGame(formData));
       }
 
-      document.getElementById(id).close();
-      onSave();
+      if (addGame.fulfilled.match(resultAction) || updateGame.fulfilled.match(resultAction)) {
+        document.getElementById(id).close();
+        if (onSave) onSave();
+      } else {
+        setError(resultAction.payload || 'Ocurrió un error al guardar');
+      }
     } catch (err) {
       setError('No se pudo conectar con el servidor');
     } finally {
@@ -135,10 +111,11 @@ function GameModal({ id, game, onSave }) {
             </label>
             <input
               type="text"
+              name="title"
               className="input input-bordered w-full"
               placeholder="Ej: Hollow Knight"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              value={values.title}
+              onChange={handleChange}
             />
           </div>
 
@@ -148,12 +125,13 @@ function GameModal({ id, game, onSave }) {
                 <span className="label-text font-semibold">Plataforma</span>
               </label>
               <select
+                name="platformId"
                 className="select select-bordered w-full"
-                value={platformId}
-                onChange={(e) => setPlatformId(e.target.value)}
+                value={values.platformId}
+                onChange={handleChange}
               >
                 <option value="">Selecciona plataforma</option>
-                {platforms.map((p) => (
+                {platforms && platforms.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
                   </option>
@@ -166,12 +144,13 @@ function GameModal({ id, game, onSave }) {
                 <span className="label-text font-semibold">Género</span>
               </label>
               <select
+                name="genreId"
                 className="select select-bordered w-full"
-                value={genreId}
-                onChange={(e) => setGenreId(e.target.value)}
+                value={values.genreId}
+                onChange={handleChange}
               >
                 <option value="">Selecciona género</option>
-                {genres.map((g) => (
+                {genres && genres.map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.name}
                   </option>
@@ -186,9 +165,10 @@ function GameModal({ id, game, onSave }) {
                 <span className="label-text font-semibold">Estado *</span>
               </label>
               <select
+                name="status"
                 className="select select-bordered w-full"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
+                value={values.status}
+                onChange={handleChange}
               >
                 <option value="En cola">En Cola</option>
                 <option value="Jugando">Jugando</option>
@@ -201,9 +181,10 @@ function GameModal({ id, game, onSave }) {
                 <span className="label-text font-semibold">Prioridad o Rating *</span>
               </label>
               <select
+                name="priority"
                 className="select select-bordered w-full"
-                value={priority}
-                onChange={(e) => setPriority(parseInt(e.target.value))}
+                value={values.priority}
+                onChange={(e) => setFieldValue('priority', parseInt(e.target.value, 10))}
               >
                 <option value={1}>1 - Muy Baja</option>
                 <option value={2}>2 - Baja</option>
@@ -220,9 +201,10 @@ function GameModal({ id, game, onSave }) {
             </label>
             <input
               type="file"
+              name="cover"
               className="file-input file-input-bordered file-input-sm w-full"
               accept="image/*"
-              onChange={handleFileChange}
+              onChange={handleChange}
             />
             {game && game.cover_path && !removeCover && (
               <div className="flex items-center justify-between mt-2 bg-base-300 p-2 rounded-lg text-xs">
@@ -248,11 +230,12 @@ function GameModal({ id, game, onSave }) {
               <span className="label-text font-semibold">Nota</span>
             </label>
             <textarea
+              name="review"
               className="textarea textarea-bordered w-full"
               placeholder="Escribe una nota o una reseña"
               rows={3}
-              value={review}
-              onChange={(e) => setReview(e.target.value)}
+              value={values.review}
+              onChange={handleChange}
             />
           </div>
 

@@ -1,62 +1,75 @@
 import React, { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { addPlatform, updatePlatform } from '../store/platformsSlice';
+import useForm from '../hooks/useForm';
 
 function PlatformModal({ id, platform, onSave }) {
-  const [name, setName] = useState('');
-  const [manufacturer, setManufacturer] = useState('');
-  const [description, setDescription] = useState('');
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const { values, handleChange, resetForm } = useForm({
+    name: '',
+    manufacturer: '',
+    description: '',
+  });
+
   useEffect(() => {
     if (platform) {
-      setName(platform.name || '');
-      setManufacturer(platform.manufacturer || '');
-      setDescription(platform.description || '');
+      resetForm({
+        name: platform.name || '',
+        manufacturer: platform.manufacturer || '',
+        description: platform.description || '',
+      });
     } else {
-      setName('');
-      setManufacturer('');
-      setDescription('');
+      resetForm({
+        name: '',
+        manufacturer: '',
+        description: '',
+      });
     }
     setError('');
-  }, [platform]);
+  }, [platform, resetForm]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (!name.trim() || !manufacturer.trim()) {
+    if (!values.name.trim() || !values.manufacturer.trim()) {
       setError('Rellena los campos obligatorios.');
       return;
     }
 
     setLoading(true);
     try {
-      const url = platform
-        ? `http://localhost:5000/api/platforms/${platform.id}`
-        : 'http://localhost:5000/api/platforms';
-
-      const method = platform ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(),
-          manufacturer: manufacturer.trim(),
-          description: description.trim(),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Ocurrió un error al guardar.');
-        setLoading(false);
-        return;
+      let resultAction;
+      if (platform) {
+        resultAction = await dispatch(
+          updatePlatform({
+            id: platform.id,
+            platformData: {
+              name: values.name.trim(),
+              manufacturer: values.manufacturer.trim(),
+              description: values.description ? values.description.trim() : '',
+            },
+          })
+        );
+      } else {
+        resultAction = await dispatch(
+          addPlatform({
+            name: values.name.trim(),
+            manufacturer: values.manufacturer.trim(),
+            description: values.description ? values.description.trim() : '',
+          })
+        );
       }
 
-      document.getElementById(id).close();
-      onSave();
+      if (addPlatform.fulfilled.match(resultAction) || updatePlatform.fulfilled.match(resultAction)) {
+        document.getElementById(id).close();
+        if (onSave) onSave();
+      } else {
+        setError(resultAction.payload || 'Ocurrió un error al guardar.');
+      }
     } catch (err) {
       setError('No se pudo conectar con el servidor.');
     } finally {
@@ -78,10 +91,11 @@ function PlatformModal({ id, platform, onSave }) {
             </label>
             <input
               type="text"
+              name="name"
               className="input input-bordered w-full"
               placeholder="Ej: PlayStation 5"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={values.name}
+              onChange={handleChange}
             />
           </div>
 
@@ -91,10 +105,11 @@ function PlatformModal({ id, platform, onSave }) {
             </label>
             <input
               type="text"
+              name="manufacturer"
               className="input input-bordered w-full"
               placeholder="Ej: Sony"
-              value={manufacturer}
-              onChange={(e) => setManufacturer(e.target.value)}
+              value={values.manufacturer}
+              onChange={handleChange}
             />
           </div>
 
@@ -103,11 +118,12 @@ function PlatformModal({ id, platform, onSave }) {
               <span className="label-text font-semibold">Descripción</span>
             </label>
             <textarea
+              name="description"
               className="textarea textarea-bordered w-full"
               placeholder="Descripción breve de la plataforma"
               rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              value={values.description}
+              onChange={handleChange}
             />
           </div>
 
@@ -118,13 +134,15 @@ function PlatformModal({ id, platform, onSave }) {
           )}
 
           <div className="modal-action mt-0">
-            <form method="dialog">
-              <button type="submit" className="btn btn-ghost mr-2">
-                Cancelar
-              </button>
-            </form>
+            <button
+              type="button"
+              className="btn btn-ghost mr-2"
+              onClick={() => document.getElementById(id).close()}
+            >
+              Cancelar
+            </button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? <span className="loading loading-spinner loading-sm" /> : null}
+              {loading && <span className="loading loading-spinner loading-sm" />}
               {platform ? 'Guardar Cambios' : 'Crear Plataforma'}
             </button>
           </div>

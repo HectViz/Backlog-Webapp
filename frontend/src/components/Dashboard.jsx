@@ -1,48 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Star } from 'lucide-react';
+import useFetch from '../hooks/useFetch';
+import { fetchGames } from '../store/gamesSlice';
+import { fetchPlatforms } from '../store/platformsSlice';
+import useLocalStorage from '../hooks/useLocalStorage';
+import useTitle from '../hooks/useTitle';
 
 function Dashboard() {
-  const [games, setGames] = useState([]);
-  const [platformsCount, setPlatformsCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [activeGameId, setActiveGameId] = useState(() => {
-    return localStorage.getItem('dashboard_active_game_id') || '';
-  });
+  useTitle('Dashboard');
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [gamesRes, platformsRes] = await Promise.all([
-          fetch('http://localhost:5000/api/games'),
-          fetch('http://localhost:5000/api/platforms')
-        ]);
-        setGames(await gamesRes.json());
-        setPlatformsCount((await platformsRes.json()).length);
-      } catch (err) {
-        console.error('Error al cargar datos:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+  const { data: games, loading: loadingGames } = useFetch(fetchGames, (state) => state.games);
+  const { data: platforms, loading: loadingPlatforms } = useFetch(fetchPlatforms, (state) => state.platforms);
 
-  const totalGames = games.length;
-  const playing = games.filter((g) => g.status === 'Jugando').length;
-  const pending = games.filter((g) => g.status === 'En cola').length;
-  const completed = games.filter((g) => g.status === 'Completado').length;
+  const [activeGameId, setActiveGameId] = useLocalStorage('dashboard_active_game_id', '');
 
-  const averagePriority = totalGames > 0
+  const loading = loadingGames || loadingPlatforms;
+
+  const totalGames = games ? games.length : 0;
+  const playing = games ? games.filter((g) => g.status === 'Jugando').length : 0;
+  const pending = games ? games.filter((g) => g.status === 'En cola').length : 0;
+  const completed = games ? games.filter((g) => g.status === 'Completado').length : 0;
+
+  const averagePriority = totalGames > 0 && games
     ? (games.reduce((acc, g) => acc + g.priority, 0) / totalGames).toFixed(1)
     : '0.0';
 
   const platformCounts = {};
-  games.forEach((game) => {
-    if (game.platform_name) {
-      platformCounts[game.platform_name] = (platformCounts[game.platform_name] || 0) + 1;
-    }
-  });
+  if (games) {
+    games.forEach((game) => {
+      if (game.platform_name) {
+        platformCounts[game.platform_name] = (platformCounts[game.platform_name] || 0) + 1;
+      }
+    });
+  }
 
   let topPlatform = 'Ninguna';
   let topPlatformCount = 0;
@@ -53,7 +43,7 @@ function Dashboard() {
     }
   });
 
-  const activeGame = games.find((g) => g.id.toString() === activeGameId);
+  const activeGame = games ? games.find((g) => g.id.toString() === activeGameId) : null;
 
   if (loading) {
     return (
@@ -129,7 +119,7 @@ function Dashboard() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between border-b border-base-300 pb-2">
                 <span className="opacity-70">Plataformas Registradas:</span>
-                <span className="font-bold">{platformsCount}</span>
+                <span className="font-bold">{platforms ? platforms.length : 0}</span>
               </div>
               <div className="flex justify-between pb-2">
                 <span className="opacity-70">Plataforma con más juegos:</span>
@@ -145,13 +135,10 @@ function Dashboard() {
             <select
               className="select select-bordered select-sm w-full bg-base-100 font-sans"
               value={activeGameId}
-              onChange={(e) => {
-                setActiveGameId(e.target.value);
-                localStorage.setItem('dashboard_active_game_id', e.target.value);
-              }}
+              onChange={(e) => setActiveGameId(e.target.value)}
             >
               <option value="">Seleccionar videojuego</option>
-              {games.map((g) => (
+              {games && games.map((g) => (
                 <option key={g.id} value={g.id.toString()}>
                   {g.title}
                 </option>

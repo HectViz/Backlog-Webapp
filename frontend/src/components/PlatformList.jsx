@@ -1,31 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
+import useFetch from '../hooks/useFetch';
+import { fetchPlatforms, deletePlatform } from '../store/platformsSlice';
+import useTitle from '../hooks/useTitle';
 import PlatformModal from './PlatformModal';
 import ConfirmModal from './ConfirmModal';
 
 function PlatformList() {
-  const [platforms, setPlatforms] = useState([]);
-  const [loading, setLoading] = useState(true);
+  useTitle('Plataformas');
+  const dispatch = useDispatch();
+  const { data: platforms, loading, error } = useFetch(fetchPlatforms, (state) => state.platforms);
   const [selectedPlatform, setSelectedPlatform] = useState(null);
   const [platformToDelete, setPlatformToDelete] = useState(null);
   const [deleteError, setDeleteError] = useState('');
-
-  useEffect(() => {
-    fetchPlatforms();
-  }, []);
-
-  const fetchPlatforms = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('http://localhost:5000/api/platforms');
-      const data = await response.json();
-      setPlatforms(data);
-    } catch (err) {
-      console.error('Error al cargar plataformas:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleNewPlatform = () => {
     setSelectedPlatform(null);
@@ -46,16 +34,10 @@ function PlatformList() {
   const handleConfirmDelete = async () => {
     if (!platformToDelete) return;
     try {
-      const response = await fetch(
-        `http://localhost:5000/api/platforms/${platformToDelete.id}`,
-        { method: 'DELETE' }
-      );
-      const data = await response.json();
-      if (!response.ok) {
-        setDeleteError(data.error || 'No se pudo eliminar.');
-        return;
+      const resultAction = await dispatch(deletePlatform(platformToDelete.id));
+      if (deletePlatform.rejected.match(resultAction)) {
+        setDeleteError(resultAction.payload || 'No se pudo eliminar la plataforma.');
       }
-      fetchPlatforms();
     } catch (err) {
       setDeleteError('No se pudo conectar con el servidor.');
     }
@@ -81,12 +63,18 @@ function PlatformList() {
         </div>
       )}
 
+      {error && (
+        <div className="alert alert-error text-sm">
+          <span>Error al obtener plataformas: {error}</span>
+        </div>
+      )}
+
       <div className="overflow-x-auto rounded-box border-2 border-base-300">
         {loading ? (
           <div className="flex justify-center items-center p-12">
             <span className="loading loading-spinner loading-lg text-primary" />
           </div>
-        ) : platforms.length === 0 ? (
+        ) : !platforms || platforms.length === 0 ? (
           <div className="text-center p-12 text-base-content opacity-60">
             <p className="font-semibold">Empieza a registrar plataformas.</p>
             <p className="text-sm mt-1">Dale, crea una nueva para comenzar.</p>
@@ -139,7 +127,6 @@ function PlatformList() {
       <PlatformModal
         id="platform_modal"
         platform={selectedPlatform}
-        onSave={fetchPlatforms}
       />
 
       <ConfirmModal

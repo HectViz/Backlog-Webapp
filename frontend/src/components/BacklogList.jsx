@@ -1,81 +1,46 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useDispatch } from 'react-redux';
 import { Search, ChevronDown, Plus, LayoutGrid, List, Pencil, Trash2 } from 'lucide-react';
 import GameCard from './GameCard';
 import GameDetailModal from './GameDetailModal';
 import ConfirmModal from './ConfirmModal';
 import GameModal from './GameModal';
+import useFetch from '../hooks/useFetch';
+import { fetchGames, deleteGame } from '../store/gamesSlice';
+import { fetchPlatforms } from '../store/platformsSlice';
+import { fetchGenres } from '../store/genresSlice';
+import useLocalStorage from '../hooks/useLocalStorage';
+import useTitle from '../hooks/useTitle';
 
 function BacklogList() {
-  const [games, setGames] = useState([]);
-  const [loading, setLoading] = useState(true);
+  useTitle('Mi Backlog');
+  const dispatch = useDispatch();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [platformFilter, setPlatformFilter] = useState('');
   const [genreFilter, setGenreFilter] = useState('');
   const [sortBy, setSortBy] = useState('priority_desc');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' o 'table'
 
-  const [platforms, setPlatforms] = useState([]);
-  const [genres, setGenres] = useState([]);
+  const [viewMode, setViewMode] = useLocalStorage('backlog_view_mode', 'grid');
 
   const [selectedGame, setSelectedGame] = useState(null);
   const [gameToDelete, setGameToDelete] = useState(null);
   const [gameForModal, setGameForModal] = useState(null);
   const [deleteError, setDeleteError] = useState('');
 
-  // Cargar datos de filtros (Plataformas y Géneros) al montar el componente
-  useEffect(() => {
-    const loadFiltersData = async () => {
-      try {
-        const [platformsRes, genresRes] = await Promise.all([
-          fetch('http://localhost:5000/api/platforms'),
-          fetch('http://localhost:5000/api/genres')
-        ]);
-        if (platformsRes.ok && genresRes.ok) {
-          setPlatforms(await platformsRes.json());
-          setGenres(await genresRes.json());
-        }
-      } catch (err) {
-        console.error('Error al cargar datos para filtros:', err);
-      }
-    };
-    loadFiltersData();
-  }, []);
+  const fetchParams = useMemo(() => ({
+    search: searchQuery,
+    status: statusFilter,
+    platformId: platformFilter,
+    genreId: genreFilter,
+    sortBy
+  }), [searchQuery, statusFilter, platformFilter, genreFilter, sortBy]);
 
-  // Recargar videojuegos cada vez que cambien los filtros o el ordenamiento
-  useEffect(() => {
-    fetchGames();
-  }, [searchQuery, statusFilter, platformFilter, genreFilter, sortBy]);
+  const { data: games, loading, error, refetch } = useFetch(fetchGames, (state) => state.games, fetchParams);
 
-  const fetchGames = async () => {
-    setLoading(true);
-    try {
-      const queryParams = new URLSearchParams();
-      if (searchQuery.trim()) {
-        queryParams.append('search', searchQuery.trim());
-      }
-      if (statusFilter) {
-        queryParams.append('status', statusFilter);
-      }
-      if (platformFilter) {
-        queryParams.append('platformId', platformFilter);
-      }
-      if (genreFilter) {
-        queryParams.append('genreId', genreFilter);
-      }
-      if (sortBy) {
-        queryParams.append('sortBy', sortBy);
-      }
-
-      const response = await fetch(`http://localhost:5000/api/games?${queryParams.toString()}`);
-      const data = await response.json();
-      setGames(data);
-    } catch (err) {
-      console.error('Error al cargar videojuegos:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: platforms } = useFetch(fetchPlatforms, (state) => state.platforms);
+  const { data: genres } = useFetch(fetchGenres, (state) => state.genres);
 
   const handleCardClick = (game) => {
     setSelectedGame(game);
@@ -101,15 +66,10 @@ function BacklogList() {
   const handleConfirmDelete = async () => {
     if (!gameToDelete) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/games/${gameToDelete.id}`, {
-        method: 'DELETE',
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        setDeleteError(data.error || 'No se pudo eliminar el videojuego.');
-        return;
+      const resultAction = await dispatch(deleteGame(gameToDelete.id));
+      if (deleteGame.rejected.match(resultAction)) {
+        setDeleteError(resultAction.payload || 'No se pudo eliminar el videojuego.');
       }
-      fetchGames();
     } catch (err) {
       setDeleteError('No se pudo conectar con el servidor.');
     }
@@ -143,9 +103,7 @@ function BacklogList() {
         </button>
       </div>
 
-      {/* Menu de botones y filtros */}
       <div className="flex flex-col gap-4 bg-base-200 border-2 border-base-300 rounded-box p-4 shadow-sm">
-        {/* Fila superior: Búsqueda y Filtros de Estado */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="relative w-full md:max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50" size={16} />
@@ -180,29 +138,26 @@ function BacklogList() {
           </div>
         </div>
 
-        {/* Fila inferior: Filtros de Plataforma, Género, Ordenamiento y Vista */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 border-t border-base-300/40">
           <div className="flex flex-wrap items-center gap-3">
-            {/* Filtro Plataformas */}
             <select
               className="select select-bordered select-xs sm:select-sm font-sans bg-base-100"
               value={platformFilter}
               onChange={(e) => setPlatformFilter(e.target.value)}
             >
               <option value="">Todas las plataformas</option>
-              {platforms.map((p) => (
+              {platforms && platforms.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
 
-            {/* Filtro Géneros */}
             <select
               className="select select-bordered select-xs sm:select-sm font-sans bg-base-100"
               value={genreFilter}
               onChange={(e) => setGenreFilter(e.target.value)}
             >
               <option value="">Todos los géneros</option>
-              {genres.map((g) => (
+              {genres && genres.map((g) => (
                 <option key={g.id} value={g.id}>{g.name}</option>
               ))}
             </select>
@@ -260,12 +215,18 @@ function BacklogList() {
         </div>
       )}
 
+      {error && (
+        <div className="alert alert-error text-sm">
+          <span>Error al obtener videojuegos: {error}</span>
+        </div>
+      )}
+
       {/* Grid o Tabla de Videojuegos */}
       {loading ? (
         <div className="flex justify-center items-center p-24">
           <span className="loading loading-spinner loading-lg text-primary" />
         </div>
-      ) : games.length === 0 ? (
+      ) : !games || games.length === 0 ? (
         <div className="card bg-base-200 border-2 border-base-300 rounded-box p-12 text-center text-base-content opacity-60">
           <p className="font-bold text-lg">No se encontraron videojuegos</p>
           <p className="text-sm mt-1">¡Intenta agregar tus videojuegos pendientes!</p>
@@ -370,7 +331,7 @@ function BacklogList() {
       <GameModal
         id="game_modal"
         game={gameForModal}
-        onSave={fetchGames}
+        onSave={refetch}
       />
 
       <ConfirmModal

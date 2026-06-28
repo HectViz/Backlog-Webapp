@@ -5,8 +5,10 @@ import useFetch from '../hooks/useFetch';
 import { fetchGenres, deleteGenre } from '../store/genresSlice';
 import GenreModal from './GenreModal';
 import ConfirmModal from './ConfirmModal';
+import useTitle from '../hooks/useTitle';
 
 function GenreList() {
+  useTitle('Géneros');
   const dispatch = useDispatch();
   const { data: genres, loading, error } = useFetch(fetchGenres, (state) => state.genres);
   const [selectedGenre, setSelectedGenre] = useState(null);
